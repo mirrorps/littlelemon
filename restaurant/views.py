@@ -8,9 +8,14 @@ from datetime import datetime
 import json
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
-from rest_framework import generics, viewsets, permissions
+from rest_framework import generics, viewsets, status, permissions
 from .serializers import MenuSerializer, BookingSerializer, UserSerializer
 from django.contrib.auth.models import User
+from rest_framework.decorators import permission_classes, api_view
+from rest_framework.permissions import IsAuthenticated
+from django.core.exceptions import ValidationError
+from rest_framework.response import Response
+
 
 # Create your views here.
 def home(request):
@@ -25,6 +30,8 @@ def reservations(request):
     booking_json = serializers.serialize('json', bookings)
     return render(request, 'bookings.html',{"bookings":booking_json})
 
+@api_view()
+@permission_classes([IsAuthenticated])
 def book(request):
     form = BookingForm()
     # if request.method == 'POST':
@@ -102,12 +109,42 @@ class MenuItemsView(generics.ListCreateAPIView):
 class SingleMenuItemView(generics.RetrieveUpdateAPIView, generics.DestroyAPIView):
     queryset = Menu.objects.all()
     serializer_class = MenuSerializer
-    
+
 class BookingViewSet(viewsets.ModelViewSet):
     queryset = Booking.objects.all()
     serializer_class = BookingSerializer
+    permission_classes = [IsAuthenticated]
+    
+class BookingView(generics.ListCreateAPIView):
+    queryset = Booking.objects.all()
+    serializer_class = BookingSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        serializer_class_custom = BookingSerializer(data=request.POST)
+        serializer_class_custom.is_valid(raise_exception=True)
+        
+        exists = Booking.objects.filter(
+            reservation_date=request.POST.get('reservation_date'),
+            reservation_slot=request.POST.get('reservation_slot'),
+        )
+        
+        if exists:
+            return Response({'message': 'Slot is already taken for the given date'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        
+        booking = Booking()
+        booking.first_name = request.POST.get('first_name')
+        booking.reservation_date = request.POST.get('reservation_date')
+        booking.reservation_slot = request.POST.get('reservation_slot')
+        booking.save()
+        
+        return Response({'message': 'Booking successfully saved'},status=status.HTTP_201_CREATED)
+        
+        
+        
     
 class UserViewSet(viewsets.ModelViewSet):
    queryset = User.objects.all()
    serializer_class = UserSerializer
-   permission_classes = [permissions.IsAuthenticated] 
+   permission_classes = [IsAuthenticated]

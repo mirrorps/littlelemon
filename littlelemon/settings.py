@@ -39,6 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # The settings for app updated for the Graded assessment
     'rest_framework',
+    'rest_framework.authtoken',
+    'djoser',
     'restaurant',
 ]
 
@@ -149,7 +151,7 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
-        # 'rest_framework.authentication.SessionAuthentication', # this is for djoser browsable api
+        'rest_framework.authentication.SessionAuthentication', # this is for djoser browsable api
     ],
     # 'DEFAULT_THROTTLE_RATES': {
     #     'anon':'2/minute',
@@ -158,4 +160,11 @@ REST_FRAMEWORK = {
     # },
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
+}
+
+DJOSER = {
+    'USER_ID_FIELD': 'username',
+    'SERIALIZERS':{
+        'user_create': 'restaurant.serializers.UserCreateSerializer'
+    }
 }
